@@ -416,10 +416,10 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
             }
             //specail custom
             NSString *fullPath;
-            if ([strPath isEqualToString:specialPath]) {
+            if (specialPath != nil && [strPath containsString:specialPath]) {
                 fullPath = [specialDestination stringByAppendingPathComponent:strPath];
             } else {
-                fullPath = [destination stringByAppendingPathComponent:strPath]; 
+                fullPath = [destination stringByAppendingPathComponent:strPath];
             }
             NSError *err = nil;
             NSDictionary *directoryAttr;
