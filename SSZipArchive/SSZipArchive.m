@@ -228,6 +228,22 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
         progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
       completionHandler:(void (^_Nullable)(NSString *path, BOOL succeeded, NSError * _Nullable error))completionHandler
 {
+    return [self unzipFileAtPath:path toDestination:destination specailPath:nil specailDestination:nil preserveAttributes:preserveAttributes overwrite:overwrite nestedZipLevel:nestedZipLevel password:password error:error delegate:delegate progressHandler:progressHandler completionHandler:completionHandler];
+}
+
++ (BOOL)unzipFileAtPath:(NSString *)path
+          toDestination:(NSString *)destination
+            specailPath:(nullable NSString *)specailPath
+     specailDestination:(nullable NSString *)specailDestination
+     preserveAttributes:(BOOL)preserveAttributes
+              overwrite:(BOOL)overwrite
+         nestedZipLevel:(NSInteger)nestedZipLevel
+               password:(nullable NSString *)password
+                  error:(NSError **)error
+               delegate:(nullable id<SSZipArchiveDelegate>)delegate
+        progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
+      completionHandler:(void (^_Nullable)(NSString *path, BOOL succeeded, NSError * _Nullable error))completionHandler
+{
     // Guard against empty strings
     if (path.length == 0 || destination.length == 0)
     {
@@ -398,8 +414,13 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
                 // "../../../../../../../../../../../tmp/test.txt" -> "tmp/test.txt"
                 strPath = [[[NSURL URLWithString:strPath] standardizedURL] absoluteString];
             }
-            
-            NSString *fullPath = [destination stringByAppendingPathComponent:strPath];
+            //specail custom
+            NSString *fullPath;
+            if ([strPath isEqualToString:specailPath]) {
+                fullPath = [specailPath stringByAppendingPathComponent:strPath];
+            } else {
+                fullPath = [destination stringByAppendingPathComponent:strPath]; 
+            }
             NSError *err = nil;
             NSDictionary *directoryAttr;
             if (preserveAttributes) {
@@ -472,42 +493,42 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
                                             delegate:nil
                                      progressHandler:nil
                                    completionHandler:nil]) {
-                            [directoriesModificationDates removeLastObject];
-                            [[NSFileManager defaultManager] removeItemAtPath:fullPath error:nil];
-                        } else if (preserveAttributes) {
-                            
-                            // Set the original datetime property
-                            if (fileInfo.dos_date != 0) {
-                                NSDate *orgDate = [[self class] _dateWithMSDOSFormat:(UInt32)fileInfo.dos_date];
-                                NSDictionary *attr = @{NSFileModificationDate: orgDate};
+                                [directoriesModificationDates removeLastObject];
+                                [[NSFileManager defaultManager] removeItemAtPath:fullPath error:nil];
+                            } else if (preserveAttributes) {
                                 
-                                if (attr) {
-                                    if (![fileManager setAttributes:attr ofItemAtPath:fullPath error:nil]) {
-                                        // Can't set attributes
-                                        NSLog(@"[SSZipArchive] Failed to set attributes - whilst setting modification date");
+                                // Set the original datetime property
+                                if (fileInfo.dos_date != 0) {
+                                    NSDate *orgDate = [[self class] _dateWithMSDOSFormat:(UInt32)fileInfo.dos_date];
+                                    NSDictionary *attr = @{NSFileModificationDate: orgDate};
+                                    
+                                    if (attr) {
+                                        if (![fileManager setAttributes:attr ofItemAtPath:fullPath error:nil]) {
+                                            // Can't set attributes
+                                            NSLog(@"[SSZipArchive] Failed to set attributes - whilst setting modification date");
+                                        }
+                                    }
+                                }
+                                
+                                // Set the original permissions on the file (+read/write to solve #293)
+                                uLong permissions = fileInfo.external_fa >> 16 | 0b110000000;
+                                if (permissions != 0) {
+                                    // Store it into a NSNumber
+                                    NSNumber *permissionsValue = @(permissions);
+                                    
+                                    // Retrieve any existing attributes
+                                    NSMutableDictionary *attrs = [[NSMutableDictionary alloc] initWithDictionary:[fileManager attributesOfItemAtPath:fullPath error:nil]];
+                                    
+                                    // Set the value in the attributes dict
+                                    [attrs setObject:permissionsValue forKey:NSFilePosixPermissions];
+                                    
+                                    // Update attributes
+                                    if (![fileManager setAttributes:attrs ofItemAtPath:fullPath error:nil]) {
+                                        // Unable to set the permissions attribute
+                                        NSLog(@"[SSZipArchive] Failed to set attributes - whilst setting permissions");
                                     }
                                 }
                             }
-                            
-                            // Set the original permissions on the file (+read/write to solve #293)
-                            uLong permissions = fileInfo.external_fa >> 16 | 0b110000000;
-                            if (permissions != 0) {
-                                // Store it into a NSNumber
-                                NSNumber *permissionsValue = @(permissions);
-                                
-                                // Retrieve any existing attributes
-                                NSMutableDictionary *attrs = [[NSMutableDictionary alloc] initWithDictionary:[fileManager attributesOfItemAtPath:fullPath error:nil]];
-                                
-                                // Set the value in the attributes dict
-                                [attrs setObject:permissionsValue forKey:NSFilePosixPermissions];
-                                
-                                // Update attributes
-                                if (![fileManager setAttributes:attrs ofItemAtPath:fullPath error:nil]) {
-                                    // Unable to set the permissions attribute
-                                    NSLog(@"[SSZipArchive] Failed to set attributes - whilst setting permissions");
-                                }
-                            }
-                        }
                     }
                     else
                     {
