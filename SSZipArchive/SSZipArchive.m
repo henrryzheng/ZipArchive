@@ -228,13 +228,13 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
         progressHandler:(void (^_Nullable)(NSString *entry, unz_file_info zipInfo, long entryNumber, long total))progressHandler
       completionHandler:(void (^_Nullable)(NSString *path, BOOL succeeded, NSError * _Nullable error))completionHandler
 {
-    return [self unzipFileAtPath:path toDestination:destination specailPath:nil specailDestination:nil preserveAttributes:preserveAttributes overwrite:overwrite nestedZipLevel:nestedZipLevel password:password error:error delegate:delegate progressHandler:progressHandler completionHandler:completionHandler];
+    return [self unzipFileAtPath:path toDestination:destination specialPath:nil specialDestination:nil preserveAttributes:preserveAttributes overwrite:overwrite nestedZipLevel:nestedZipLevel password:password error:error delegate:delegate progressHandler:progressHandler completionHandler:completionHandler];
 }
 
 + (BOOL)unzipFileAtPath:(NSString *)path
           toDestination:(NSString *)destination
-            specailPath:(nullable NSString *)specailPath
-     specailDestination:(nullable NSString *)specailDestination
+            specialPath:(nullable NSString *)specialPath
+     specialDestination:(nullable NSString *)specialDestination
      preserveAttributes:(BOOL)preserveAttributes
               overwrite:(BOOL)overwrite
          nestedZipLevel:(NSInteger)nestedZipLevel
@@ -416,8 +416,8 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
             }
             //specail custom
             NSString *fullPath;
-            if ([strPath isEqualToString:specailPath]) {
-                fullPath = [specailPath stringByAppendingPathComponent:strPath];
+            if ([strPath isEqualToString:specialPath]) {
+                fullPath = [specialDestination stringByAppendingPathComponent:strPath];
             } else {
                 fullPath = [destination stringByAppendingPathComponent:strPath]; 
             }

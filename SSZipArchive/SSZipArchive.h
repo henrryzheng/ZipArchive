@@ -82,8 +82,8 @@ typedef NS_ENUM(NSInteger, SSZipArchiveErrorCode) {
 
 + (BOOL)unzipFileAtPath:(NSString *)path
           toDestination:(NSString *)destination
-            specailPath:(nullable NSString *)specailPath
-     specailDestination:(nullable NSString *)specailDestination
+            specialPath:(nullable NSString *)specialPath
+     specialDestination:(nullable NSString *)specialDestination
      preserveAttributes:(BOOL)preserveAttributes
               overwrite:(BOOL)overwrite
          nestedZipLevel:(NSInteger)nestedZipLevel
